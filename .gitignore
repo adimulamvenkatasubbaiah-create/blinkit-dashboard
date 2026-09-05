@@ -6,3 +6,4 @@ __pycache__/
 dist/
 build/
 check_st.py
+.streamlit/secrets.toml
