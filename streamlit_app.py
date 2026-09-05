@@ -9,6 +9,7 @@ import os
 import pandas as pd
 import streamlit as st
 import altair as alt
+import snowflake.connector
 
 st.set_page_config(
     page_title="Blinkit Operations Dashboard",
@@ -21,9 +22,19 @@ CHART_HEIGHT = 320
 
 # ── Snowflake connection ─────────────────────────────────────────────────────
 
+@st.cache_resource
 def get_connection():
     try:
-        return st.connection("snowflake")
+        creds = st.secrets["connections"]["snowflake"]
+        return snowflake.connector.connect(
+            account=creds["account"],
+            user=creds["user"],
+            password=creds["password"],
+            warehouse=creds.get("warehouse", "COMPUTE_WH"),
+            database=creds.get("database", "BLINKIT_DW"),
+            schema=creds.get("schema", "RAW"),
+            role=creds.get("role", "ACCOUNTADMIN"),
+        )
     except Exception as e:
         st.error(f"Failed to connect to Snowflake: {e}")
         st.stop()
@@ -34,9 +45,11 @@ conn = get_connection()
 
 @st.cache_data(ttl=600, show_spinner=False)
 def run_query(sql):
-    df = conn.query(sql)
-    df.columns = df.columns.str.lower()
-    return df
+    cur = conn.cursor()
+    cur.execute(sql)
+    rows = cur.fetchall()
+    cols = [desc[0].lower() for desc in cur.description]
+    return pd.DataFrame(rows, columns=cols)
 
 
 # ── Load data ────────────────────────────────────────────────────────────────
