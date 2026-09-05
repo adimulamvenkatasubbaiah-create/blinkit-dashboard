@@ -25,7 +25,7 @@ CHART_HEIGHT = 320
 @st.cache_resource
 def get_connection():
     try:
-        creds = st.secrets["connections"]["snowflake"]
+        creds = st.secrets["snowflake"]
         return snowflake.connector.connect(
             account=creds["account"],
             user=creds["user"],
